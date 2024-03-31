@@ -1,0 +1,3 @@
+add_library(linear_programming_seq linear_programming_seq.cpp)
+
+target_include_directories(linear_programming_seq PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

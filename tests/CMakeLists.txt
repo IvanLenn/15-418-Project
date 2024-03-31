@@ -1,0 +1,3 @@
+add_executable(lp_seq_test main.cpp)
+
+target_link_libraries(lp_seq_test linear_programming_seq)
