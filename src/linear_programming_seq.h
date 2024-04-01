@@ -4,17 +4,19 @@
 struct LinearProgrammingAnswer {
     double Max;
     std::vector<double> Assignment;
-    void LinearProgrammingAnswer(const double Max, std::vector<double>& Assignment) :
-                                Max(Max), Assignment(Assignment);
-}
+    LinearProgrammingAnswer(const double Max, std::vector<double>& Assignment) :
+                                Max(Max), Assignment(Assignment) {};
+};
 
 class LinearProgrammingSeq {
 private:
     int NumVar, NumCons;
     std::vector<std::vector<double>> Matrix;
+    std::vector<double> Target;
 public:
-    void LinearProgrammingSeq(const int n);
-    void AddCons(const int m, const std::vector<std::vector<double>>& A,
-                 const std::vector<std::vector<double>>& Target);
+    LinearProgrammingSeq(const int n);
+    void AddTarget(const std::vector<double>& T);
+    void AddCons(const std::vector<std::vector<double>>& A);
     LinearProgrammingAnswer& Solve() const;
-}
+    void Print() const;
+};
