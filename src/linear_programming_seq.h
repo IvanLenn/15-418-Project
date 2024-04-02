@@ -11,8 +11,9 @@ struct LinearProgrammingAnswer {
     std::vector<double> Assignment;
     Status SolutionStatus;
     LinearProgrammingAnswer() : Max(0), Assignment(std::vector<double>()), SolutionStatus(Infeasible) {};
-    LinearProgrammingAnswer(const double Max, std::vector<double>& Assignment, Status SolutionStatus) :
+    LinearProgrammingAnswer(double Max, std::vector<double>& Assignment, Status SolutionStatus) :
                                 Max(Max), Assignment(Assignment), SolutionStatus(SolutionStatus) {};
+    void Print() const;
 };
 
 class LinearProgrammingSeq {
@@ -24,7 +25,8 @@ private:
     LinearProgrammingAnswer Answer{};
 
     void InitTableau();
-    std::pair<int, int> FindPivot() const;
+    std::pair<int, int> FindPivot();
+    void Eliminate(int pivot_row, int pivot_col);
     void PrintM(std::vector<std::vector<double>>& T) const;
 public:
     LinearProgrammingSeq(const int n);

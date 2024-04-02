@@ -9,5 +9,6 @@ int main() {
     lps.AddTarget(target);
     lps.AddCons(cons);
     lps.Print();
-    lps.Solve();
+    LinearProgrammingAnswer Ans = lps.Solve();
+    Ans.Print();
 }
