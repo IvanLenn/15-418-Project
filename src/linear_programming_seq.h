@@ -18,6 +18,7 @@ struct LinearProgrammingAnswer {
 
 class LinearProgrammingSeq {
 private:
+    const double EPI = 1e-6;
     int NumVar, NumCons;
     std::vector<std::vector<double>> Matrix;
     std::vector<double> Target;
