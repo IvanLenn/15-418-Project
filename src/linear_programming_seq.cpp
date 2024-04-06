@@ -24,6 +24,22 @@ void LinearProgrammingAnswer::Print() const {
     }
 }
 
+bool LinearProgrammingAnswer::operator==(const LinearProgrammingAnswer& rhs) const {
+    if (SolutionStatus != rhs.SolutionStatus) {
+        return false;
+    }
+    if (SolutionStatus == Infeasible) {
+        return true;
+    }
+    if (SolutionStatus == Unbounded) {
+        return true;
+    }
+    if (std::abs(Max - rhs.Max) > 1e-6) {
+        return false;
+    }
+    return true;
+}
+
 LinearProgrammingSeq::LinearProgrammingSeq(const int n) : NumVar(n), NumCons(0) {}
 
 void LinearProgrammingSeq::AddTarget(const std::vector<double>& T) {
@@ -104,14 +120,20 @@ std::pair<int, int> LinearProgrammingSeq::FindPivot() {
     }
 
     p = std::numeric_limits<double>::max();
+    bool unbound = true;
     for (int i = 0; i < NumCons; i++) {
         if (Tableau[i][pivot_col] > EPI) {
             double ratio = Tableau[i][NumVar] / Tableau[i][pivot_col];
             if (ratio < p) {
+                unbound = false;
                 pivot_row = i;
                 p = ratio;
             }
         }
+    }
+    if (unbound) {
+        Answer.SolutionStatus = LinearProgrammingAnswer::Unbounded;
+        return std::make_pair(pivot_row, pivot_col);
     }
     return std::make_pair(pivot_row, pivot_col);
 }
@@ -187,6 +209,30 @@ LinearProgrammingAnswer& LinearProgrammingSeq::Solve() {
         Eliminate(pivot_row, pivot_col);
     }
     return Answer;
+}
+
+void LinearProgrammingSeq::Check() const {
+    if (Answer.SolutionStatus != LinearProgrammingAnswer::Bounded) {
+        return;
+    }
+    double max = 0.0f;
+    for (int i = 0; i < NumCons; i++) {
+        double sum = 0.0f;
+        for (int j = 0; j < NumVar; j++) {
+            sum += Answer.Assignment[j] * Matrix[i][j];
+        }
+        if (sum > Matrix[i][NumVar] + EPI) {
+            std::cerr << "Check failed\n";
+            exit(EXIT_FAILURE);
+        }
+    }
+    for (int i = 0; i < NumVar; i++) {
+        max += Answer.Assignment[i] * Target[i];
+    }
+    if (max < Answer.Max - EPI) {
+        std::cerr << "Check failed\n";
+        exit(EXIT_FAILURE);
+    }
 }
 
 void LinearProgrammingSeq::Print() const {
