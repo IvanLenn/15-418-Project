@@ -45,7 +45,7 @@ void LinearProgrammingSeq::AddCons(const std::vector<std::vector<double>>& A) {
     }
 }
 
-void LinearProgrammingSeq::PrintM(std::vector<std::vector<double>>& T) const {
+void LinearProgrammingSeq::PrintM(const std::vector<std::vector<double>>& T) const {
     for (int i = 0; i < T.size(); i++) {
         for (int j = 0; j < T[i].size(); j++) {
             std::cout << T[i][j] << " ";
@@ -55,84 +55,130 @@ void LinearProgrammingSeq::PrintM(std::vector<std::vector<double>>& T) const {
     std::cout << '\n';
 }
 
-void LinearProgrammingSeq::InitTableau() {
+void LinearProgrammingSeq::Init() {
     Tableau.clear();
-    Tableau.resize(NumCons + 1);
-    for (int i = 0; i < NumCons + 1; i++) {
-        Tableau[i].resize(NumVar + NumCons + 2, 0);
-    }
+    Basic.clear();
+    NonBasic.clear();
+    Answer = LinearProgrammingAnswer();
+    Tableau.resize(NumCons + 1, std::vector<double>(NumVar + 1, 0));
 
     for (int i = 0; i < NumCons; i++) {
-        for (int j = 0; j < NumVar; j++) {
+        for (int j = 0; j <= NumVar; j++) {
             Tableau[i][j] = Matrix[i][j];
         }
-        Tableau[i][NumVar + i] = 1;
-        Tableau[i][NumVar + NumCons + 1] = Matrix[i][NumVar];
     }
 
     for (int i = 0; i < NumVar; i++) {
-        Tableau[NumCons][i] = -Target[i];
+        Tableau[NumCons][i] = Target[i];
     }
-    Tableau[NumCons][NumVar + NumCons] = 1;
+
+    for (int i = 0; i < NumCons; i++) {
+        Basic.push_back(NumVar + i);
+    }
+    for (int i = 0; i < NumVar; i++) {
+        NonBasic.push_back(i);
+    }
 }
 
 std::pair<int, int> LinearProgrammingSeq::FindPivot() {
     int pivot_row = -1;
     int pivot_col = -1;
-    double min_ratio = std::numeric_limits<double>::max();
-    double min = std::numeric_limits<double>::max();
-    for (int i = 0; i < NumVar + NumCons; i++) {
-        if (Tableau[NumCons][i] < min) {
-            min = Tableau[NumCons][i];
+    double p = 0.0f;
+    for (int i = 0; i < NumVar; i++) {
+        if (Tableau[NumCons][i] > p) {
             pivot_col = i;
+            p = Tableau[NumCons][i];
         }
     }
-    if (min >= 0) {
-        // Answer = LinearProgrammingAnswer(Tableau[NumCons][NumVar + NumCons + 1],);
-        Answer.SolutionStatus = LinearProgrammingAnswer::Status::Bounded;
-        Answer.Max = Tableau[NumCons][NumVar + NumCons + 1];
-        /*************************
-        TODO: Assignment of variables not yet implemented
-        *************************/
-        return std::make_pair(pivot_row, pivot_col);
-    }
-    for (int i = 0; i < NumCons; i++) {
-        if (Tableau[i][pivot_col] > 0) {
-            double ratio = Tableau[i][NumVar + NumCons + 1] / Tableau[i][pivot_col];
-            if (ratio < min_ratio) {
-                min_ratio = ratio;
-                pivot_row = i;
+
+    if (p < EPI) {
+        Answer.SolutionStatus = LinearProgrammingAnswer::Bounded;
+        Answer.Max = -Tableau[NumCons][NumVar];
+        Answer.Assignment.resize(NumVar, 0);
+        for (int i = 0; i < NumVar; i++) {
+            if (Basic[i] < NumVar) {
+                Answer.Assignment[Basic[i]] = Tableau[i][NumVar];
             }
         }
-    }
-    if (pivot_row == -1) {
-        Answer.SolutionStatus = LinearProgrammingAnswer::Status::Unbounded;
         return std::make_pair(pivot_row, pivot_col);
+    }
+
+    p = std::numeric_limits<double>::max();
+    for (int i = 0; i < NumCons; i++) {
+        if (Tableau[i][pivot_col] > EPI) {
+            double ratio = Tableau[i][NumVar] / Tableau[i][pivot_col];
+            if (ratio < p) {
+                pivot_row = i;
+                p = ratio;
+            }
+        }
     }
     return std::make_pair(pivot_row, pivot_col);
 }
 
-void LinearProgrammingSeq::Eliminate(int pivot_row, int pivot_col) {
-    double pivot = Tableau[pivot_row][pivot_col];
-    for (int i = 0; i < NumVar + NumCons + 2; i++) {
-        Tableau[pivot_row][i] /= pivot;
-    }
-    for (int i = 0; i < NumCons + 1; i++) {
-        if (i == pivot_row) {
-            continue;
+void LinearProgrammingSeq::Eliminate(const int pivot_row, const int pivot_col) {
+    std::swap(Basic[pivot_row], NonBasic[pivot_col]);
+    Tableau[pivot_row][pivot_col] = 1.0 / Tableau[pivot_row][pivot_col];
+    for (int i = 0; i <= NumVar; i++) {
+        if (i != pivot_col) {
+            Tableau[pivot_row][i] *= Tableau[pivot_row][pivot_col];
         }
-        double ratio = Tableau[i][pivot_col];
-        for (int j = 0; j < NumVar + NumCons + 2; j++) {
-            Tableau[i][j] -= ratio * Tableau[pivot_row][j];
+    }
+    for (int i = 0; i <= NumCons; i++) {
+        if (i != pivot_row) {
+            for (int j = 0; j <= NumVar; j++) {
+                if (j != pivot_col) {
+                    Tableau[i][j] -= Tableau[i][pivot_col] * Tableau[pivot_row][j];
+                }
+            }
+            Tableau[i][pivot_col] = -Tableau[i][pivot_col] * Tableau[pivot_row][pivot_col];
         }
     }
 }
 
+
+bool LinearProgrammingSeq::Feasible() {
+    int pivot_row = -1;
+    int pivot_col = -1;
+    while (true) {
+        double p = std::numeric_limits<double>::max();
+        for (int i = 0; i < NumCons; i++) {
+            if (Tableau[i][NumVar] < p) {
+                pivot_row = i;
+                p = Tableau[i][NumVar];
+            }
+        }
+        if (p > -EPI) {
+            return true;
+        }
+        p = 0.0f;
+        for (int i = 0; i < NumVar; i++) {
+            if (Tableau[pivot_row][i] < p) {
+                pivot_col = i;
+                p = Tableau[pivot_row][i];
+            }
+        }
+        if (p > -EPI) {
+            return false;
+        }
+        for (int i = pivot_row + 1; i < NumCons; i++) {
+            if (Tableau[i][pivot_col] > EPI) {
+                double tmp = Tableau[i][NumVar] / Tableau[i][pivot_col];
+                if (tmp < p) {
+                    pivot_row = i;
+                    p = tmp;
+                }
+            }
+        }
+        Eliminate(pivot_row, pivot_col);
+    }
+}
+
 LinearProgrammingAnswer& LinearProgrammingSeq::Solve() {
-    InitTableau();
-    /*************************
-    TODO: Case of no solution
-    *************************/
+    Init();
+    if (!Feasible()) {
+        return Answer;
+    }
     while (true) {
         auto [pivot_row, pivot_col] = FindPivot();
         if (pivot_row == -1) {

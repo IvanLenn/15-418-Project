@@ -23,12 +23,14 @@ private:
     std::vector<std::vector<double>> Matrix;
     std::vector<double> Target;
     std::vector<std::vector<double>> Tableau;
+    std::vector<int> Basic, NonBasic;
     LinearProgrammingAnswer Answer{};
 
-    void InitTableau();
+    void Init();
+    bool Feasible();
     std::pair<int, int> FindPivot();
-    void Eliminate(int pivot_row, int pivot_col);
-    void PrintM(std::vector<std::vector<double>>& T) const;
+    void Eliminate(const int pivot_row, const int pivot_col);
+    void PrintM(const std::vector<std::vector<double>>& T) const;
 public:
     LinearProgrammingSeq(const int n);
     void AddTarget(const std::vector<double>& T);
