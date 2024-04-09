@@ -1,3 +1,6 @@
 add_library(linear_programming_seq linear_programming_seq.cpp)
-
 target_include_directories(linear_programming_seq PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_library(linear_programming_par linear_programming_par.cpp)
+target_link_libraries(linear_programming_par ${MPI_CXX_LIBRARIES})
+target_include_directories(linear_programming_par PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${MPI_CXX_INCLUDE_PATH})

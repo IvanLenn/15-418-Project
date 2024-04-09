@@ -4,6 +4,7 @@
 #include <string>
 #include <fstream>
 #include <mpi.h>
+#include "linear_programming_par.h"
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
