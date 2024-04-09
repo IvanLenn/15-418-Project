@@ -10,23 +10,23 @@ int main(int argc, char *argv[]) {
     int opt;
     bool default_input = true;
 	while ((opt = getopt(argc, argv, "t:f")) != -1) {
-		switch (opt) {
-		case 'f':
-			input_filename = optarg;
-        	default_input = false;
-        	break;
-    	case 't':
-        	break;
-		default:
-			std::cerr << "Usage: " << argv[0] << " -f input_filename [-t any]\n";
-			exit(EXIT_FAILURE);
-		}
-	}
+        switch (opt) {
+        case 'f':
+            input_filename = optarg;
+            default_input = false;
+            break;
+        case 't':
+            break;
+        default:
+            std::cerr << "Usage: " << argv[0] << " -f input_filename [-t any]\n";
+            exit(EXIT_FAILURE);
+        }
+    }
 
     if (default_input) {
         std::ifstream fin("../tests/test_data/lp_seq.ans");
         if (!fin) {
-			std::cerr << "Unable to open file: " << "../tests/test_data/lp_seq.ans" << ".\n";
+            std::cerr << "Unable to open file: " << "../tests/test_data/lp_seq.ans" << ".\n";
 			exit(EXIT_FAILURE);
 		}
         int N = 0;
