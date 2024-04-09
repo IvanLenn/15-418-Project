@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <string>
 #include <fstream>
-#include <filesystem>
 #include "linear_programming_seq.h"
 
 int main(int argc, char *argv[]) {
@@ -14,10 +13,10 @@ int main(int argc, char *argv[]) {
 		switch (opt) {
 		case 'f':
 			input_filename = optarg;
-            default_input = false;
-            break;
-        case 't':
-            break;
+        	default_input = false;
+        	break;
+    	case 't':
+        	break;
 		default:
 			std::cerr << "Usage: " << argv[0] << " -f input_filename [-t any]\n";
 			exit(EXIT_FAILURE);
