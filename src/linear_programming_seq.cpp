@@ -183,6 +183,7 @@ bool LinearProgrammingSeq::Feasible() {
         if (p > -EPI) {
             return false;
         }
+        p = Tableau[pivot_row][NumVar] / Tableau[pivot_row][pivot_col];
         for (int i = pivot_row + 1; i < NumCons; i++) {
             if (Tableau[i][pivot_col] > EPI) {
                 double tmp = Tableau[i][NumVar] / Tableau[i][pivot_col];

@@ -1,11 +1,13 @@
 #include <vector>
 #include <iostream>
 #include <cassert>
+#include <fstream>
 #include "linear_programming_seq.h"
 
 struct Edge {
-    int from, to, cap;
-    Edge(int from, int to, int cap) : from(from), to(to), cap(cap) {}
+    int from, to;
+    double cap;
+    Edge(int from, int to, double cap) : from(from), to(to), cap(cap) {}
 };
 
 struct FlowAnswer {
@@ -17,13 +19,13 @@ struct FlowAnswer {
 class Flow {
     int n, m, s, t;
     std::vector<Edge> G;
+public:
     Flow(int n, int s, int t, std::vector<Edge> G) : n(n), s(s), t(t), G(G) {
         m = G.size();
         for (auto &e : G) {
             assert(e.cap >= 0);
             assert(e.from >= 0 && e.from < n);
             assert(e.to >= 0 && e.to < n);
-            assert(e.from != e.to);
         }
     }
 
@@ -35,7 +37,8 @@ class Flow {
         int start = 2 * m;
         for (int i = 0; i < n; i++) {
             if (i == s || i == t) continue;
-            label[i] = start++;
+            label[i] = start;
+            start += 2;
         }
 
         for (int i = 0; i < m; i++) {
@@ -69,5 +72,29 @@ class Flow {
 };
 
 int main() {
-    return 0;
+    std::ifstream fin("../tests/test_data/flow_seq.ans");
+    if (!fin) {
+        std::cerr << "Unable to open file: " << "../tests/test_data/flow_seq.ans" << ".\n";
+        exit(EXIT_FAILURE);
+    }
+	long long ans;
+	fin >> ans;
+	fin.close();
+	fin.open("../tests/test_data/flow_seq.in");
+	if (!fin) {
+        std::cerr << "Unable to open file: " << "../tests/test_data/flow_seq.in" << ".\n";
+        exit(EXIT_FAILURE);
+    }
+	int n, m, s, t;
+	fin >> n >> m >> s >> t;
+	std::vector<Edge> G;
+	for (int i = 0; i < m; i++) {
+		int from, to;
+		double cap;
+		fin >> from >> to >> cap;
+		G.push_back(Edge(from, to, cap));
+	}
+	Flow flow(n, s, t, G);
+	long long answer = static_cast<long long>(flow.Solve().Max);
+	std::cout << "Max: " << answer << '\n';
 }
