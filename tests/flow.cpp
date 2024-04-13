@@ -2,6 +2,8 @@
 #include <iostream>
 #include <cassert>
 #include <fstream>
+#include <iomanip>
+#include <chrono>
 #include "linear_programming_seq.h"
 
 struct Edge {
@@ -69,20 +71,25 @@ public:
         auto ans = T.Solve();
         return FlowAnswer(ans.Max, ans.Assignment);
     }
+
+	void Stats() const {
+		std::cout << "Graph with " << n << " vertices and " << m << " edges.\n";
+		std::cout << "LP with " << 2 * (m + n - 2) << " constraints and " << m << " variables.\n";
+	}
 };
 
-int main() {
-    std::ifstream fin("../tests/test_data/flow_seq.ans");
+void Running(std::string test_name, std::string filename) {
+	std::ifstream fin("../tests/test_data/flow/" + filename + ".ans");
     if (!fin) {
-        std::cerr << "Unable to open file: " << "../tests/test_data/flow_seq.ans" << ".\n";
+        std::cerr << "Unable to open file: " << ("../tests/test_data/flow/" + filename + ".ans") << ".\n";
         exit(EXIT_FAILURE);
     }
 	long long ans;
 	fin >> ans;
 	fin.close();
-	fin.open("../tests/test_data/flow_seq.in");
+	fin.open("../tests/test_data/flow/" + filename + ".in");
 	if (!fin) {
-        std::cerr << "Unable to open file: " << "../tests/test_data/flow_seq.in" << ".\n";
+        std::cerr << "Unable to open file: " << ("../tests/test_data/flow/" + filename + ".in") << ".\n";
         exit(EXIT_FAILURE);
     }
 	int n, m, s, t;
@@ -95,6 +102,24 @@ int main() {
 		G.push_back(Edge(from, to, cap));
 	}
 	Flow flow(n, s, t, G);
+	std::cout << "Flow " + test_name + " test: \n";
+	flow.Stats();
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 	long long answer = static_cast<long long>(flow.Solve().Max);
+	const double init_time = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - begin).count();
+	std::cout << "Runtime (sec): " << std::fixed << std::setprecision(10) << init_time << '\n';
 	std::cout << "Max: " << answer << '\n';
+	if (abs(answer - ans) / ans < 1e-6) {
+		std::cout << "Flow easy test passed.\n";
+	} else {
+		std::cout << "Flow easy test failed.\n";
+	}
+	fin.close();
+	std::cout << "\n=============================================\n\n";
+}
+
+int main() {
+	Running("easy", "flow_easy");
+	Running("medium", "flow_medium");
+	return 0;
 }
