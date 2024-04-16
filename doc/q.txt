@@ -1,0 +1,25 @@
+maximize c.T @ x
+subject to A @ x <= b
+
+Init():
+    Build Tableau of shape (NumCons + 1) * (NumVar + 1)
+    Top NumCons row are constrains; Last row is target function; Last column is conefficient on right of Inequality
+    Basic: NumVar - (NumVar + NumCons - 1) // Stores answer variables
+    Non-Basic: 0 - (NumVar - 1)
+
+Feasible():
+    1. Find min and argmin of last column (pivot_row). If all non-negative, then True
+    2. Find min and argmin of this row (pivot_column). If all non-negative, then False
+    3. Find the biggest value the variable at (pivot_column) can take, for all rows downward (pivot_row); update new pivot_row
+    4. Eliminate()
+
+FindPivot():
+    1. Find biggest coefficient in target (pivot_column). If all non-negative we are done: For all basic in range we update answer
+    2. If all coefficient at (pivot_column) negative: Done. Got unbounded solution
+    3. Eliminate()
+
+Eliminate():
+    1. swap basic[pivot_row] with nonbasic[pivot_column]
+    2. set (pivot_row, pivot_column) to reciprocal and modify the whole row
+    3. For all other rows: modify accodingly
+    
