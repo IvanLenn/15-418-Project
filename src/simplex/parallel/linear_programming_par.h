@@ -33,7 +33,7 @@ private:
     void Eliminate(const int pivot_row, const int pivot_col);
     void PrintM(const std::vector<std::vector<double>>& T) const;
 public:
-    LinearProgrammingSeq(const int n);
+    LinearProgramming(const int n);
     void AddTarget(const std::vector<double>& T);
     void AddCons(const std::vector<std::vector<double>>& A);
     LinearProgrammingAnswer& Solve();
