@@ -1,4 +1,4 @@
-#include "linear_programming_par.h"
+#include "lp_par.h"
 #include <cassert>
 #include <string>
 #include <iostream>

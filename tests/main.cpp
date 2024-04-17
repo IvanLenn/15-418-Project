@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <string>
 #include <fstream>
-#include "linear_programming_seq.h"
+#include "lp_seq.h"
 
 int main(int argc, char *argv[]) {
     std::string input_filename;
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
             lps.AddCons(cons);
             LinearProgrammingAnswer Tmp = lps.Solve();
             lps.Check();
-            if (!(Tmp == Ans[i])) {
+            if (Tmp != Ans[i]) {
                 Tmp.Print();
                 Ans[i].Print();
                 std::cout << "Test " << i << " failed\n";
