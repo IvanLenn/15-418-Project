@@ -16,6 +16,9 @@ int main(int argc, char** argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &pid);
 
     std::cout << "Hello from process " << pid << "\n";
+    if (pid == 0) {
+        auto T = createLP("?");
+    }
 
     MPI_Finalize();
     return 0;
