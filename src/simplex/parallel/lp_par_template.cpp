@@ -1,4 +1,4 @@
-#include "lp_par1.h"
+#include "lp_par_template.h"
 #include <cassert>
 #include <string>
 #include <iostream>
@@ -161,10 +161,6 @@ bool LinearProgramming1::Feasible() {
 }
 
 LinearProgrammingAnswer& LinearProgramming1::Solve() {
-    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
-    printf("Processor %d\n", pid);
-    auto t = LinearProgrammingAnswer();
-    return t;
     Init();
     if (!Feasible()) {
         return Answer;

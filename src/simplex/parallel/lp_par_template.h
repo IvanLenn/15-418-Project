@@ -48,7 +48,7 @@ struct LinearProgrammingAnswer {
     }
 };
 
-class LinearProgramming {
+class LinearProgramming1 {
 private:
     const double EPI = 1e-6;
     int NumVar, NumCons;
@@ -58,19 +58,17 @@ private:
     std::vector<int> Basic, NonBasic;
     LinearProgrammingAnswer Answer{};
 
-    virtual void Init() = 0;
-    virtual bool Feasible() = 0;
-    virtual std::pair<int, int> FindPivot() = 0;
-    virtual void Eliminate(const int pivot_row, const int pivot_col) = 0;
-    virtual void PrintM(const std::vector<std::vector<double>>& T) const = 0;
+    void Init();
+    bool Feasible();
+    std::pair<int, int> FindPivot();
+    void Eliminate(const int pivot_row, const int pivot_col);
+    void PrintM(const std::vector<std::vector<double>>& T) const;
 public:
-    LinearProgramming() {};
-    LinearProgramming(const int n) : NumVar(n), NumCons(0) {}
-    virtual void AddTarget(const std::vector<double>& T) = 0;
-    virtual void AddCons(const std::vector<std::vector<double>>& A) = 0;
-    virtual LinearProgrammingAnswer& Solve() = 0;
-    virtual void Check() const = 0;
-    virtual void Print() const = 0;
+    LinearProgramming1() {};
+    LinearProgramming1(const int n) {};
+    void AddTarget(const std::vector<double>& T);
+    void AddCons(const std::vector<std::vector<double>>& A);
+    LinearProgrammingAnswer& Solve();
+    void Check() const;
+    void Print() const;
 };
-
-LinearProgramming* createLP(const std::string type);

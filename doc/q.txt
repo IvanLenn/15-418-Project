@@ -13,13 +13,43 @@ Feasible():
     3. Find the biggest value the variable at (pivot_column) can take, for all rows downward (pivot_row); update new pivot_row
     4. Eliminate()
 
+    Required:
+    . . . . . . . . . . . . . . . . . . . x
+    . . . . . . . . . . . . . . . . . . . x
+    . . . . . . . . . . . . . . . . . . . x
+    x x x x x x x x x x x x x x x x x x x x
+    . . . . . . x . . . . . . . . . . . . x
+    . . . . . . x . . . . . . . . . . . . x
+    . . . . . . x . . . . . . . . . . . . x
+    . . . . . . x . . . . . . . . . . . . x
+
 FindPivot():
     1. Find biggest coefficient in target (pivot_column). If all non-negative we are done: For all basic in range we update answer
     2. If all coefficient at (pivot_column) negative: Done. Got unbounded solution
     3. Eliminate()
 
+    Required:
+    . . . . . . x . . . . . . . . . . . . x
+    . . . . . . x . . . . . . . . . . . . x
+    . . . . . . x . . . . . . . . . . . . x
+    . . . . . . x . . . . . . . . . . . . x
+    . . . . . . x . . . . . . . . . . . . x
+    . . . . . . x . . . . . . . . . . . . x
+    . . . . . . x . . . . . . . . . . . . x
+    x x x x x x x x x x x x x x x x x x x .
+
 Eliminate():
     1. swap basic[pivot_row] with nonbasic[pivot_column]
     2. set (pivot_row, pivot_column) to reciprocal and modify the whole row
     3. For all other rows: modify accodingly
+
+    Required:
+    . . . . . . . . . . . . . . . . . . . .
+    . . . . . o . o . . . . . . . . . . . .
+    . . . . . . . . . . . . . . . . . . . .
+    . . . . . p . o . . . . . . . . . . . .
+    . . . . . . . . . . . . . . . . . . . .
+    . . . . . . . . . . . . . . . . . . . .
+    . . . . . . . . . . . . . . . . . . . .
+    . . . . . . . . . . . . . . . . . . . .
     
