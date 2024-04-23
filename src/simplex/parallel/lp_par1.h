@@ -62,7 +62,11 @@ private:
     double** Tableau;
     double* buffer;
     int* Basic, *NonBasic;
-    LinearProgrammingAnswer Answer{};
+    LinearProgrammingAnswer* Answer;
+    struct {
+        double r;
+        int idx;
+    } in, out;
 
     void Init();
     bool Feasible();
@@ -74,7 +78,7 @@ public:
     LinearProgramming1(const int n);
     void AddTarget(const std::vector<double>& T);
     void AddCons(const std::vector<std::vector<double>>& A);
-    LinearProgrammingAnswer& Solve();
+    LinearProgrammingAnswer* Solve();
     void Check() const;
     void Print() const;
 };

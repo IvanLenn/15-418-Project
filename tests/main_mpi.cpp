@@ -95,29 +95,22 @@ int main(int argc, char** argv) {
                 lp1.AddTarget(target);
                 lp1.AddCons(cons);
             }
-            lp1.Solve();
+            LinearProgrammingAnswer Tmp = *lp1.Solve();
+            lp1.Check();
             lp1.Print();
-            // LinearProgrammingAnswer Tmp = lps.Solve();
-            // lps.Check();
-            // if (Tmp != Ans[i]) {
-            //     Tmp.Print();
-            //     Ans[i].Print();
-            //     std::cout << "Test " << i << " failed\n";
-            // }
-            // else {
-            //     std::cout << "Test " << i << " passed\n";
-            // }
+            if (Tmp != Ans[i]) {
+                Tmp.Print();
+                Ans[i].Print();
+                std::cout << "Test " << i << " failed\n";
+            }
+            else {
+                std::cout << "Test " << i << " passed\n";
+            }
             
         }
         fin.close();
         return 0;
     }
-
-    if (pid == nproc - 1) {
-
-    }
-    auto T = LinearProgramming1();
-    T.Solve();
 
     MPI_Finalize();
     return 0;

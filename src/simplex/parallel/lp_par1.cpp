@@ -18,6 +18,7 @@ LinearProgramming1::LinearProgramming1() {
     Basic = nullptr;
     NonBasic = nullptr;
     buffer = nullptr;
+    Answer = new LinearProgrammingAnswer();
 }
 
 LinearProgramming1::LinearProgramming1(const int n) {
@@ -33,6 +34,7 @@ LinearProgramming1::LinearProgramming1(const int n) {
     Basic = nullptr;
     NonBasic = nullptr;
     buffer = nullptr;
+    Answer = new LinearProgrammingAnswer();
 }
 
 LinearProgramming1::~LinearProgramming1() {
@@ -44,6 +46,7 @@ LinearProgramming1::~LinearProgramming1() {
     delete[] Basic;
     delete[] NonBasic;
     delete[] buffer;
+    delete Answer;
 }
 
 /*************************
@@ -121,7 +124,6 @@ void LinearProgramming1::Init() {
     for (int i = 0; i < NumVar; i++) {
         NonBasic[i] = i;
     }
-    Answer = LinearProgrammingAnswer();
     buffer = new double[std::max(NumVar + 1, NumCons)];
     MPI_Scatter(MatrixData, task_required * (NumVar + 1), MPI_DOUBLE, TableauData, task_required * (NumVar + 1), MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
 }
@@ -149,12 +151,12 @@ std::pair<int, int> LinearProgramming1::FindPivot() {
         }
         MPI_Gather(tmp, task_required, MPI_DOUBLE, buffer, task_required, MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
         if (pid == nproc - 1) {
-            Answer.SolutionStatus = LinearProgrammingAnswer::Bounded;
-            Answer.Max = -Target[NumVar];
-            Answer.Assignment.resize(NumVar, 0);
+            Answer -> SolutionStatus = LinearProgrammingAnswer::Bounded;
+            Answer -> Max = -Target[NumVar];
+            Answer -> Assignment.resize(NumVar, 0);
             for (int i = 0; i < NumVar; i++) {
                 if (Basic[i] < NumVar) {
-                    Answer.Assignment[Basic[i]] = buffer[i];
+                    Answer -> Assignment[Basic[i]] = buffer[i];
                 }
             }
         }
@@ -175,17 +177,14 @@ std::pair<int, int> LinearProgramming1::FindPivot() {
         }
     }
 
-    struct {
-        double r;
-        int row;
-    } in, out;
     in.r = p;
-    in.row = pivot_row;
+    in.idx = pivot_row;
     MPI_Allreduce(&in, &out, 1, MPI_DOUBLE_INT, MPI_MINLOC, MPI_COMM_WORLD);
-    if (out.row >= 0) unbound = false; 
+    if (out.idx >= 0) unbound = false; 
+    pivot_row = out.idx;
 
     if (unbound) {
-        Answer.SolutionStatus = LinearProgrammingAnswer::Unbounded;
+        Answer -> SolutionStatus = LinearProgrammingAnswer::Unbounded;
         return std::make_pair(pivot_row, pivot_col);
     }
     return std::make_pair(pivot_row, pivot_col);
@@ -236,35 +235,62 @@ bool LinearProgramming1::Feasible() {
     int pivot_col = -1;
     while (true) {
         double p = std::numeric_limits<double>::max();
-        for (int i = 0; i < NumCons; i++) {
-            if (Tableau[i][NumVar] < p) {
+        for (int i = StartCons; i < EndCons; i++) {
+            if (Tableau[i - StartCons][NumVar] < p) {
                 pivot_row = i;
-                p = Tableau[i][NumVar];
+                p = Tableau[i - StartCons][NumVar];
             }
         }
-        if (p > -EPI) {
+        in.r = p;
+        in.idx = pivot_row;
+        MPI_Allreduce(&in, &out, 1, MPI_DOUBLE_INT, MPI_MINLOC, MPI_COMM_WORLD);
+
+        if (out.r > -EPI) {
             return true;
         }
+        pivot_row = out.idx;
+
         p = 0.0f;
-        for (int i = 0; i < NumVar; i++) {
-            if (Tableau[pivot_row][i] < p) {
-                pivot_col = i;
-                p = Tableau[pivot_row][i];
-            }
-        }
-        if (p > -EPI) {
-            return false;
-        }
-        p = Tableau[pivot_row][NumVar] / Tableau[pivot_row][pivot_col];
-        for (int i = pivot_row + 1; i < NumCons; i++) {
-            if (Tableau[i][pivot_col] > EPI) {
-                double tmp = Tableau[i][NumVar] / Tableau[i][pivot_col];
-                if (tmp < p) {
-                    pivot_row = i;
-                    p = tmp;
+        int pid_row_local = pivot_row / (EndCons - StartCons);
+        if (pid == pid_row_local) {
+            for (int i = 0; i < NumVar; i++) {
+                if (Tableau[pivot_row - StartCons][i] < p) {
+                    pivot_col = i;
+                    p = Tableau[pivot_row - StartCons][i];
                 }
             }
         }
+        MPI_Bcast(&pivot_col, 1, MPI_INT, pid_row_local, MPI_COMM_WORLD);
+        if (pivot_col == -1) {
+            return false;
+        }
+
+        p = std::numeric_limits<double>::max();
+        if (pid == pid_row_local) {
+            for (int i = pivot_row - StartCons; i < EndCons - StartCons; i++) {
+                if (Tableau[i][pivot_col] > EPI) {
+                    double tmp = Tableau[i][NumVar] / Tableau[i][pivot_col];
+                    if (tmp < p) {
+                        pivot_row = i + StartCons;
+                        p = tmp;
+                    }
+                }
+            }
+        }
+        else if (pid > pid_row_local) {
+            for (int i = StartCons; i < EndCons; i++) {
+                if (Tableau[i - StartCons][pivot_col] > EPI) {
+                    double tmp = Tableau[i - StartCons][NumVar] / Tableau[i - StartCons][pivot_col];
+                    if (tmp < p) {
+                        pivot_row = i;
+                        p = tmp;
+                    }
+                }
+            }
+        }
+        in.r = p;
+        in.idx = pivot_row;
+        MPI_Allreduce(&in, &out, 1, MPI_DOUBLE_INT, MPI_MINLOC, MPI_COMM_WORLD);
         Eliminate(pivot_row, pivot_col);
     }
 }
@@ -272,10 +298,8 @@ bool LinearProgramming1::Feasible() {
 /*************************
 POSTCONDITION: Only Answer returned by pid nproc - 1 is valid
 *************************/
-LinearProgrammingAnswer& LinearProgramming1::Solve() {
+LinearProgrammingAnswer* LinearProgramming1::Solve() {
     Init();
-    auto t = LinearProgrammingAnswer();
-    return t;
     if (!Feasible()) {
         return Answer;
     }
@@ -291,20 +315,20 @@ LinearProgrammingAnswer& LinearProgramming1::Solve() {
 
 void LinearProgramming1::Check() const {
     // Broadcast Answer
-    MPI_BCase(&Answer.SolutionStatus, 1, MPI_INT, nproc - 1, MPI_COMM_WORLD);
-    MPI_BCase(&Answer.Max, 1, MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
-    MPI_BCase(Answer.Assignment.data(), NumVar, MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
+    MPI_Bcast(&Answer -> SolutionStatus, 1, MPI_INT, nproc - 1, MPI_COMM_WORLD);
+    MPI_Bcast(&Answer -> Max, 1, MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
+    MPI_Bcast(Answer -> Assignment.data(), NumVar, MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
 
-    if (Answer.SolutionStatus != LinearProgrammingAnswer::Bounded) {
+    if (Answer -> SolutionStatus != LinearProgrammingAnswer::Bounded) {
         return;
     }
 
-    for (int i = BeginCons; i < EndCons; i++) {
+    for (int i = StartCons; i < EndCons; i++) {
         double sum = 0.0f;
         for (int j = 0; j < NumVar; j++) {
-            sum += Answer.Assignment[j] * Tableau[i - BeginCons][j];
+            sum += Answer -> Assignment[j] * Tableau[i - StartCons][j];
         }
-        if (sum > tableau[i - BeginCons][NumVar] + EPI) {
+        if (sum > Tableau[i - StartCons][NumVar] + EPI) {
             std::cerr << "Check failed on " << i << " th constraint\n";
             exit(EXIT_FAILURE);
         }
@@ -313,9 +337,9 @@ void LinearProgramming1::Check() const {
     if (pid == nproc - 1) {
         double max = 0.0f;
         for (int i = 0; i < NumVar; i++) {
-            max += Answer.Assignment[i] * Target[i];
+            max += Answer -> Assignment[i] * Target[i];
         }
-        if (max < Answer.Max - EPI || max > Answer.Max + EPI) {
+        if (max < Answer -> Max - EPI || max > Answer -> Max + EPI) {
             std::cerr << "Check failed\n";
             exit(EXIT_FAILURE);
         }
