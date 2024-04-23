@@ -60,6 +60,7 @@ private:
     double* Target;
     double* TableauData;
     double** Tableau;
+    double* buffer;
     int* Basic, *NonBasic;
     LinearProgrammingAnswer Answer{};
 

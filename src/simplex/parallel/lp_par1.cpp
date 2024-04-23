@@ -17,6 +17,7 @@ LinearProgramming1::LinearProgramming1() {
     Tableau = nullptr;
     Basic = nullptr;
     NonBasic = nullptr;
+    buffer = nullptr;
 }
 
 LinearProgramming1::LinearProgramming1(const int n) {
@@ -31,6 +32,7 @@ LinearProgramming1::LinearProgramming1(const int n) {
     Tableau = nullptr;
     Basic = nullptr;
     NonBasic = nullptr;
+    buffer = nullptr;
 }
 
 LinearProgramming1::~LinearProgramming1() {
@@ -41,6 +43,7 @@ LinearProgramming1::~LinearProgramming1() {
     delete[] TableauData;
     delete[] Basic;
     delete[] NonBasic;
+    delete[] buffer;
 }
 
 /*************************
@@ -119,38 +122,51 @@ void LinearProgramming1::Init() {
         NonBasic[i] = i;
     }
     Answer = LinearProgrammingAnswer();
+    buffer = new double[std::max(NumVar + 1, NumCons)];
     MPI_Scatter(MatrixData, task_required * (NumVar + 1), MPI_DOUBLE, TableauData, task_required * (NumVar + 1), MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
-
 }
 
 std::pair<int, int> LinearProgramming1::FindPivot() {
     int pivot_row = -1;
     int pivot_col = -1;
     double p = 0.0f;
-    for (int i = 0; i < NumVar; i++) {
-        if (Tableau[NumCons][i] > p) {
-            pivot_col = i;
-            p = Tableau[NumCons][i];
-        }
-    }
-
-    if (p < EPI) {
-        Answer.SolutionStatus = LinearProgrammingAnswer::Bounded;
-        Answer.Max = -Tableau[NumCons][NumVar];
-        Answer.Assignment.resize(NumVar, 0);
+    if (pid == nproc - 1) {
         for (int i = 0; i < NumVar; i++) {
-            if (Basic[i] < NumVar) {
-                Answer.Assignment[Basic[i]] = Tableau[i][NumVar];
+            if (Target[i] > p) {
+                pivot_col = i;
+                p = Target[i];
             }
         }
+    }
+    MPI_Bcast(&pivot_col, 1, MPI_INT, nproc - 1, MPI_COMM_WORLD);
+    MPI_Bcast(&p, 1, MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
+
+    if (p < EPI) {
+        int task_required = EndCons - StartCons;
+        double* tmp = new double[task_required];
+        for (int i = 0; i < task_required; i++) {
+            tmp[i] = Tableau[i][NumVar];
+        }
+        MPI_Gather(tmp, task_required, MPI_DOUBLE, buffer, task_required, MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
+        if (pid == nproc - 1) {
+            Answer.SolutionStatus = LinearProgrammingAnswer::Bounded;
+            Answer.Max = -Target[NumVar];
+            Answer.Assignment.resize(NumVar, 0);
+            for (int i = 0; i < NumVar; i++) {
+                if (Basic[i] < NumVar) {
+                    Answer.Assignment[Basic[i]] = buffer[i];
+                }
+            }
+        }
+        delete[] tmp;
         return std::make_pair(pivot_row, pivot_col);
     }
 
     p = std::numeric_limits<double>::max();
     bool unbound = true;
-    for (int i = 0; i < NumCons; i++) {
-        if (Tableau[i][pivot_col] > EPI) {
-            double ratio = Tableau[i][NumVar] / Tableau[i][pivot_col];
+    for (int i = StartCons; i < EndCons; i++) {
+        if (Tableau[i - StartCons][pivot_col] > EPI) {
+            double ratio = Tableau[i - StartCons][NumVar] / Tableau[i - StartCons][pivot_col];
             if (ratio < p) {
                 unbound = false;
                 pivot_row = i;
@@ -158,6 +174,16 @@ std::pair<int, int> LinearProgramming1::FindPivot() {
             }
         }
     }
+
+    struct {
+        double r;
+        int row;
+    } in, out;
+    in.r = p;
+    in.row = pivot_row;
+    MPI_Allreduce(&in, &out, 1, MPI_DOUBLE_INT, MPI_MINLOC, MPI_COMM_WORLD);
+    if (out.row >= 0) unbound = false; 
+
     if (unbound) {
         Answer.SolutionStatus = LinearProgrammingAnswer::Unbounded;
         return std::make_pair(pivot_row, pivot_col);
@@ -167,20 +193,39 @@ std::pair<int, int> LinearProgramming1::FindPivot() {
 
 void LinearProgramming1::Eliminate(const int pivot_row, const int pivot_col) {
     std::swap(Basic[pivot_row], NonBasic[pivot_col]);
-    Tableau[pivot_row][pivot_col] = 1.0 / Tableau[pivot_row][pivot_col];
-    for (int i = 0; i <= NumVar; i++) {
-        if (i != pivot_col) {
-            Tableau[pivot_row][i] *= Tableau[pivot_row][pivot_col];
+    int task_required = EndCons - StartCons;
+    int pid_row_local = pivot_row / task_required;
+    if (StartCons <= pivot_row && pivot_row < EndCons) {
+        Tableau[pivot_row - StartCons][pivot_col] = 1.0 / Tableau[pivot_row - StartCons][pivot_col];
+        for (int i = 0; i <= NumVar; i++) {
+            if (i != pivot_col) {
+                Tableau[pivot_row - StartCons][i] *= Tableau[pivot_row - StartCons][pivot_col];
+            }
         }
     }
-    for (int i = 0; i <= NumCons; i++) {
+    if (pid == pid_row_local) {
+        for (int i = 0; i <= NumVar; i++) {
+            buffer[i] = Tableau[pivot_row - StartCons][i];
+        }
+    }
+    MPI_Bcast(buffer, NumVar + 1, MPI_DOUBLE, pid_row_local, MPI_COMM_WORLD);
+
+    for (int i = StartCons; i < EndCons; i++) {
         if (i != pivot_row) {
             for (int j = 0; j <= NumVar; j++) {
                 if (j != pivot_col) {
-                    Tableau[i][j] -= Tableau[i][pivot_col] * Tableau[pivot_row][j];
+                    Tableau[i - StartCons][j] -= Tableau[i - StartCons][pivot_col] * buffer[j];
                 }
             }
-            Tableau[i][pivot_col] = -Tableau[i][pivot_col] * Tableau[pivot_row][pivot_col];
+            Tableau[i - StartCons][pivot_col] = -Tableau[i - StartCons][pivot_col] * buffer[pivot_col];
+        }
+    }
+    if (pid == nproc - 1) {
+        for (int j = 0; j < NumVar; j++) {
+            if (j != pivot_col) {
+                Target[j] -= Target[pivot_col] * buffer[j];
+            }
+            Target[pivot_col] = -Target[pivot_col] * buffer[pivot_col];
         }
     }
 }

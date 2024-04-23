@@ -2,3 +2,8 @@ Each processor will store a chunk of constraints.
 The target will store in process 0
 All inputs are sent into process 0
 All 2D array are stored in a contiguous fashion (MatrixData is real data, Matrix is to make it 2D)
+
+Fix:
+Line 144 not mallocing a new array everytime? Store everything in buffer
+Do we need to maintain basic and nonbasic for every processor?
+Line 141 2 Bcast
