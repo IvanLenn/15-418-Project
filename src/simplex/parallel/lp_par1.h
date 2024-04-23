@@ -3,7 +3,7 @@
 #include <iostream>
 
 struct LinearProgrammingAnswer {
-    enum Status {
+    enum Status : int {
         Infeasible,
         Bounded,
         Unbounded

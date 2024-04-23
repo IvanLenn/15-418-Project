@@ -269,6 +269,9 @@ bool LinearProgramming1::Feasible() {
     }
 }
 
+/*************************
+POSTCONDITION: Only Answer returned by pid nproc - 1 is valid
+*************************/
 LinearProgrammingAnswer& LinearProgramming1::Solve() {
     Init();
     auto t = LinearProgrammingAnswer();
@@ -287,26 +290,35 @@ LinearProgrammingAnswer& LinearProgramming1::Solve() {
 }
 
 void LinearProgramming1::Check() const {
+    // Broadcast Answer
+    MPI_BCase(&Answer.SolutionStatus, 1, MPI_INT, nproc - 1, MPI_COMM_WORLD);
+    MPI_BCase(&Answer.Max, 1, MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
+    MPI_BCase(Answer.Assignment.data(), NumVar, MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
+
     if (Answer.SolutionStatus != LinearProgrammingAnswer::Bounded) {
         return;
     }
-    double max = 0.0f;
-    for (int i = 0; i < NumCons; i++) {
+
+    for (int i = BeginCons; i < EndCons; i++) {
         double sum = 0.0f;
         for (int j = 0; j < NumVar; j++) {
-            sum += Answer.Assignment[j] * Matrix[i][j];
+            sum += Answer.Assignment[j] * Tableau[i - BeginCons][j];
         }
-        if (sum > Matrix[i][NumVar] + EPI) {
-            std::cerr << "Check failed\n";
+        if (sum > tableau[i - BeginCons][NumVar] + EPI) {
+            std::cerr << "Check failed on " << i << " th constraint\n";
             exit(EXIT_FAILURE);
         }
     }
-    for (int i = 0; i < NumVar; i++) {
-        max += Answer.Assignment[i] * Target[i];
-    }
-    if (max < Answer.Max - EPI) {
-        std::cerr << "Check failed\n";
-        exit(EXIT_FAILURE);
+
+    if (pid == nproc - 1) {
+        double max = 0.0f;
+        for (int i = 0; i < NumVar; i++) {
+            max += Answer.Assignment[i] * Target[i];
+        }
+        if (max < Answer.Max - EPI || max > Answer.Max + EPI) {
+            std::cerr << "Check failed\n";
+            exit(EXIT_FAILURE);
+        }
     }
 }
 

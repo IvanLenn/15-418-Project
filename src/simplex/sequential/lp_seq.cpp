@@ -193,7 +193,7 @@ void LinearProgrammingSeq::Check() const {
     for (int i = 0; i < NumVar; i++) {
         max += Answer.Assignment[i] * Target[i];
     }
-    if (max < Answer.Max - EPI) {
+    if (max < Answer.Max - EPI || max > Answer.Max + EPI) {
         std::cerr << "Check failed\n";
         exit(EXIT_FAILURE);
     }

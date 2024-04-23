@@ -4,6 +4,7 @@ All inputs are sent into process 0
 All 2D array are stored in a contiguous fashion (MatrixData is real data, Matrix is to make it 2D)
 
 Fix:
-Line 144 not mallocing a new array everytime? Store everything in buffer
-Do we need to maintain basic and nonbasic for every processor?
-Line 141 2 Bcast
+lp_par1.cpp Line 144 not mallocing a new array everytime? Store everything in buffer
+lp_par1.cpp Do we need to maintain basic and nonbasic for every processor?
+lp_par1.cpp Line 141 2 Bcast
+lp_par1.cpp Line 294 and others: 1D array can use vector.data() to transfer?
