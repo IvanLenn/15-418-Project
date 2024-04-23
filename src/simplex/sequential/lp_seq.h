@@ -70,4 +70,5 @@ public:
     LinearProgrammingAnswer& Solve();
     void Check() const;
     void Print() const;
+    void dbg() const;
 };

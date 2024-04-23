@@ -55,10 +55,15 @@ PRECONDITION: Only pid nproc - 1 will call this function
 void LinearProgramming1::AddTarget(const std::vector<double>& T) {
     assert(pid == nproc - 1);
     assert(T.size() == NumVar);
-    Target = new double[NumVar];
+    InputTarget.resize(NumVar);
+    for (int i = 0; i < NumVar; i++) {
+        InputTarget[i] = T[i];
+    }
+    Target = new double[NumVar + 1];
     for (int i = 0; i < NumVar; i++) {
         Target[i] = T[i];
     }
+    Target[NumVar] = 0;
 }
 
 /*************************
@@ -68,6 +73,9 @@ void LinearProgramming1::AddCons(const std::vector<std::vector<double>>& A) {
     assert(pid == nproc - 1);
     for (auto &a : A) {
         assert(a.size() == NumVar + 1);
+    }
+    for (auto a : A) {
+        InputMatrix.push_back(a);
     }
 
     NumCons += A.size();
@@ -103,9 +111,7 @@ PRECONDITION: Only calling the whole function once; Also once for Solve;
 *************************/
 void LinearProgramming1::Init() {
     // Broadcast the number of constraints
-    if (pid == nproc - 1) {
-        MPI_Bcast(&NumCons, 1, MPI_INT, nproc - 1, MPI_COMM_WORLD);
-    }
+    MPI_Bcast(&NumCons, 1, MPI_INT, nproc - 1, MPI_COMM_WORLD);
 
     // Allocate all required arrays across processes
     int task_required = (NumCons + nproc - 1) / nproc;
@@ -144,7 +150,7 @@ std::pair<int, int> LinearProgramming1::FindPivot() {
     MPI_Bcast(&p, 1, MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
 
     if (p < EPI) {
-        int task_required = EndCons - StartCons;
+        int task_required = (NumCons + nproc - 1) / nproc;
         double* tmp = new double[task_required];
         for (int i = 0; i < task_required; i++) {
             tmp[i] = Tableau[i][NumVar];
@@ -192,7 +198,7 @@ std::pair<int, int> LinearProgramming1::FindPivot() {
 
 void LinearProgramming1::Eliminate(const int pivot_row, const int pivot_col) {
     std::swap(Basic[pivot_row], NonBasic[pivot_col]);
-    int task_required = EndCons - StartCons;
+    int task_required = (NumCons + nproc - 1) / nproc;
     int pid_row_local = pivot_row / task_required;
     if (StartCons <= pivot_row && pivot_row < EndCons) {
         Tableau[pivot_row - StartCons][pivot_col] = 1.0 / Tableau[pivot_row - StartCons][pivot_col];
@@ -220,12 +226,12 @@ void LinearProgramming1::Eliminate(const int pivot_row, const int pivot_col) {
         }
     }
     if (pid == nproc - 1) {
-        for (int j = 0; j < NumVar; j++) {
+        for (int j = 0; j <= NumVar; j++) {
             if (j != pivot_col) {
                 Target[j] -= Target[pivot_col] * buffer[j];
             }
-            Target[pivot_col] = -Target[pivot_col] * buffer[pivot_col];
         }
+        Target[pivot_col] = -Target[pivot_col] * buffer[pivot_col];
     }
 }
 
@@ -299,6 +305,7 @@ bool LinearProgramming1::Feasible() {
 POSTCONDITION: Only Answer returned by pid nproc - 1 is valid
 *************************/
 LinearProgrammingAnswer* LinearProgramming1::Solve() {
+    return Answer;
     Init();
     if (!Feasible()) {
         return Answer;
@@ -347,33 +354,58 @@ void LinearProgramming1::Check() const {
 }
 
 void LinearProgramming1::Print() const {
+    if (pid != nproc - 1) return;
     auto f = [](const int i) {return "x_" + std::to_string(i);};
-    if (pid == 0) std::cout << "Maximize ";
-    if (pid == 0) {
-        for (int i = 0; i < NumVar; i++) {
-            std::cout << Target[i] << "*" << f(i) << " ";
-            if (i != NumVar - 1) {
+    std::cout << "Maximize ";
+    for (int i = 0; i < NumVar; i++) {
+        std::cout << InputTarget[i] << "*" << f(i) << " ";
+        if (i != NumVar - 1) {
+            std::cout << "+ ";
+        }
+    }
+    std::cout << '\n';
+    std::cout << "Subject to: \n";
+    for (int i = 0; i < NumCons; i++) {
+        for (int j = 0; j < NumVar; j++) {
+            std::cout << InputMatrix[i][j] << "*" << f(j) << " ";
+            if (j != NumVar - 1) {
                 std::cout << "+ ";
             }
         }
-        std::cout << '\n';
+        std::cout << "<= " << InputMatrix[i][NumVar] << '\n';
     }
+}
 
-    if (pid == 0) std::cout << "Subject to: \n";
+void LinearProgramming1::dbg() const {
+    std::cout << "From pid: " << pid << " in dbg: " << StartCons << ' ' << EndCons << '\n';
+    if (pid == nproc - 1) std::cout << "Tableau:\n";
     for (int i = 0; i < nproc; i++) {
         if (pid == i) {
-            for (int j = StartCons; j < EndCons; j++) {
-                for (int k = 0; k < NumVar; k++) {
-                    std::cout << Matrix[j][k] << "*" << f(k) << " ";
-                    if (k != NumVar - 1) {
-                        std::cout << "+ ";
-                    }
+            for (int j = 0; j < EndCons - StartCons; j++) {
+                for (int k = 0; k <= NumVar; k++) {
+                    std::cout << Tableau[j][k] << " ";
                 }
-                std::cout << "<= " << Matrix[j][NumVar] << '\n';
+                std::cout << '\n';
             }
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
-
-    std::cout << '\n';
+    if (pid == nproc - 1) {
+        for (int i = 0; i <= NumVar; i++) {
+            std::cout << Target[i] << " ";
+        }
+        std::cout << '\n';
+        std::cout << "Basic: ";
+        for (int i = 0; i < NumCons; i++) {
+            std::cout << Basic[i] << " ";
+        }
+        std::cout << '\n';
+        std::cout << "NonBasic: ";
+        for (int i = 0; i < NumVar; i++) {
+            std::cout << NonBasic[i] << " ";
+        }
+        std::cout << '\n';
+        Answer -> Print();
+        std::cout << '\n';
+    }
 }

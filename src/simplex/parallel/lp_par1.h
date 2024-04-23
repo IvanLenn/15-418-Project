@@ -55,6 +55,8 @@ private:
 
     const double EPI = 1e-6;
     int NumVar, NumCons;
+    std::vector<std::vector<double>> InputMatrix;
+    std::vector<double> InputTarget;
     double* MatrixData;
     double** Matrix;
     double* Target;
@@ -81,4 +83,5 @@ public:
     LinearProgrammingAnswer* Solve();
     void Check() const;
     void Print() const;
+    void dbg() const;
 };

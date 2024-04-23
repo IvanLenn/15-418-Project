@@ -31,7 +31,6 @@ void LinearProgrammingSeq::PrintM(const std::vector<std::vector<double>>& T) con
         }
         std::cout << '\n';
     }
-    std::cout << '\n';
 }
 
 void LinearProgrammingSeq::Init() {
@@ -171,6 +170,7 @@ LinearProgrammingAnswer& LinearProgrammingSeq::Solve() {
             break;
         }
         Eliminate(pivot_row, pivot_col);
+        dbg();
     }
     return Answer;
 }
@@ -199,6 +199,9 @@ void LinearProgrammingSeq::Check() const {
     }
 }
 
+/*************************
+Output the given constraints and target function
+*************************/
 void LinearProgrammingSeq::Print() const {
     auto f = [](const int i) {return "x_" + std::to_string(i);};
     std::cout << "Maximize ";
@@ -220,4 +223,21 @@ void LinearProgrammingSeq::Print() const {
         }
         std::cout << "<= " << Matrix[i][NumVar] << '\n';
     }
+}
+
+void LinearProgrammingSeq::dbg() const {
+    std::cout << "Tableau:\n";
+    PrintM(Tableau);
+    std::cout << "Basic: ";
+    for (auto &b : Basic) {
+        std::cout << b << " ";
+    }
+    std::cout << '\n';
+    std::cout << "NonBasic: ";
+    for (auto &nb : NonBasic) {
+        std::cout << nb << " ";
+    }
+    std::cout << '\n';
+    Answer.Print();
+    std::cout << '\n';
 }
