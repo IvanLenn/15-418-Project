@@ -5,58 +5,122 @@
 #include <limits>
 #include <mpi.h>
 
+LinearProgramming1::LinearProgramming1() {
+    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+    MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+    NumVar = 0;
+    NumCons = 0;
+    Target = nullptr;
+    MatrixData = nullptr;
+    Matrix = nullptr;
+    TableauData = nullptr;
+    Tableau = nullptr;
+    Basic = nullptr;
+    NonBasic = nullptr;
+}
+
+LinearProgramming1::LinearProgramming1(const int n) {
+    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+    MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+    NumVar = n;
+    NumCons = 0;
+    Target = nullptr;
+    MatrixData = nullptr;
+    Matrix = nullptr;
+    TableauData = nullptr;
+    Tableau = nullptr;
+    Basic = nullptr;
+    NonBasic = nullptr;
+}
+
+LinearProgramming1::~LinearProgramming1() {
+    delete[] Target;
+    delete[] Matrix;
+    delete[] MatrixData;
+    delete[] Tableau;
+    delete[] TableauData;
+    delete[] Basic;
+    delete[] NonBasic;
+}
+
+/*************************
+PRECONDITION: Only pid nproc - 1 will call this function
+*************************/
 void LinearProgramming1::AddTarget(const std::vector<double>& T) {
+    assert(pid == nproc - 1);
     assert(T.size() == NumVar);
-    Target.resize(NumVar);
+    Target = new double[NumVar];
     for (int i = 0; i < NumVar; i++) {
         Target[i] = T[i];
     }
 }
 
+/*************************
+PRECONDITION: Only pid nproc - 1 will call this function
+*************************/
 void LinearProgramming1::AddCons(const std::vector<std::vector<double>>& A) {
+    assert(pid == nproc - 1);
     for (auto &a : A) {
         assert(a.size() == NumVar + 1);
     }
 
     NumCons += A.size();
-    for (auto &a : A) {
-        Matrix.push_back(a);
+    int pad = (NumCons + nproc - 1) / nproc * nproc - NumCons;
+    double* bData = new double[(NumCons + pad) * (NumVar + 1)];
+    double** b = new double*[NumCons + pad];
+    for (int i = 0; i < NumCons + pad; i++) {
+        b[i] = bData + i * (NumVar + 1);
     }
-}
-
-void LinearProgramming1::PrintM(const std::vector<std::vector<double>>& T) const {
-    for (int i = 0; i < T.size(); i++) {
-        for (int j = 0; j < T[i].size(); j++) {
-            std::cout << T[i][j] << " ";
-        }
-        std::cout << '\n';
-    }
-    std::cout << '\n';
-}
-
-void LinearProgramming1::Init() {
-    Tableau.clear();
-    Basic.clear();
-    NonBasic.clear();
-    Answer = LinearProgrammingAnswer();
-    Tableau.resize(NumCons + 1, std::vector<double>(NumVar + 1, 0));
-
-    for (int i = 0; i < NumCons; i++) {
+    for (int i = 0; i < NumCons - A.size(); i++) {
         for (int j = 0; j <= NumVar; j++) {
-            Tableau[i][j] = Matrix[i][j];
+            b[i][j] = Matrix[i][j];
         }
     }
+    for (int i = NumCons - A.size(); i < NumCons; i++) {
+        for (int j = 0; j <= NumVar; j++) {
+            b[i][j] = A[i - NumCons + A.size()][j];
+        }
+    }
+    for (int i = NumCons; i < NumCons + pad; i++) {
+        for (int j = 0; j <= NumVar; j++) {
+            b[i][j] = 0.0f;
+        }
+    }
+    delete[] MatrixData;
+    delete[] Matrix;
+    MatrixData = bData;
+    Matrix = b;
+}
 
-    for (int i = 0; i < NumVar; i++) {
-        Tableau[NumCons][i] = Target[i];
+/*************************
+PRECONDITION: Only calling the whole function once; Also once for Solve;
+*************************/
+void LinearProgramming1::Init() {
+    // Broadcast the number of constraints
+    if (pid == nproc - 1) {
+        MPI_Bcast(&NumCons, 1, MPI_INT, nproc - 1, MPI_COMM_WORLD);
     }
 
+    // Allocate all required arrays across processes
+    int task_required = (NumCons + nproc - 1) / nproc;
+    StartCons = pid * task_required;
+    EndCons = std::min(NumCons, (pid + 1) * task_required);
+    TableauData = new double[task_required * (NumVar + 1)];
+    Tableau = new double*[task_required];
+    for (int j = 0; j < task_required; j++) {
+        Tableau[j] = TableauData + j * (NumVar + 1);
+    }
+    Basic = new int[NumCons];
+    NonBasic = new int[NumVar];
     for (int i = 0; i < NumCons; i++) {
-        Basic.push_back(NumVar + i);
+        Basic[i] = NumVar + i;
     }
     for (int i = 0; i < NumVar; i++) {
-        NonBasic.push_back(i);
+        NonBasic[i] = i;
     }
+    Answer = LinearProgrammingAnswer();
+    MPI_Scatter(MatrixData, task_required * (NumVar + 1), MPI_DOUBLE, TableauData, task_required * (NumVar + 1), MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
+
 }
 
 std::pair<int, int> LinearProgramming1::FindPivot() {
@@ -161,11 +225,9 @@ bool LinearProgramming1::Feasible() {
 }
 
 LinearProgrammingAnswer& LinearProgramming1::Solve() {
-    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
-    printf("Processor %d\n", pid);
+    Init();
     auto t = LinearProgrammingAnswer();
     return t;
-    Init();
     if (!Feasible()) {
         return Answer;
     }
@@ -205,23 +267,32 @@ void LinearProgramming1::Check() const {
 
 void LinearProgramming1::Print() const {
     auto f = [](const int i) {return "x_" + std::to_string(i);};
-    std::cout << "Maximize ";
-    for (int i = 0; i < NumVar; i++) {
-        std::cout << Target[i] << "*" << f(i) << " ";
-        if (i != NumVar - 1) {
-            std::cout << "+ ";
-        }
-    }
-    std::cout << '\n';
-
-    std::cout << "Subject to: \n";
-    for (int i = 0; i < NumCons; i++) {
-        for (int j = 0; j < NumVar; j++) {
-            std::cout << Matrix[i][j] << "*" << f(j) << " ";
-            if (j != NumVar - 1) {
+    if (pid == 0) std::cout << "Maximize ";
+    if (pid == 0) {
+        for (int i = 0; i < NumVar; i++) {
+            std::cout << Target[i] << "*" << f(i) << " ";
+            if (i != NumVar - 1) {
                 std::cout << "+ ";
             }
         }
-        std::cout << "<= " << Matrix[i][NumVar] << '\n';
+        std::cout << '\n';
     }
+
+    if (pid == 0) std::cout << "Subject to: \n";
+    for (int i = 0; i < nproc; i++) {
+        if (pid == i) {
+            for (int j = StartCons; j < EndCons; j++) {
+                for (int k = 0; k < NumVar; k++) {
+                    std::cout << Matrix[j][k] << "*" << f(k) << " ";
+                    if (k != NumVar - 1) {
+                        std::cout << "+ ";
+                    }
+                }
+                std::cout << "<= " << Matrix[j][NumVar] << '\n';
+            }
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+
+    std::cout << '\n';
 }

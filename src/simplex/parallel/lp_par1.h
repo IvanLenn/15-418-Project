@@ -50,24 +50,27 @@ struct LinearProgrammingAnswer {
 
 class LinearProgramming1 {
 private:
-    int pid;
+    int pid, nproc;
+    int StartCons, EndCons;
 
     const double EPI = 1e-6;
     int NumVar, NumCons;
-    std::vector<std::vector<double>> Matrix;
-    std::vector<double> Target;
-    std::vector<std::vector<double>> Tableau;
-    std::vector<int> Basic, NonBasic;
+    double* MatrixData;
+    double** Matrix;
+    double* Target;
+    double* TableauData;
+    double** Tableau;
+    int* Basic, *NonBasic;
     LinearProgrammingAnswer Answer{};
 
     void Init();
     bool Feasible();
     std::pair<int, int> FindPivot();
     void Eliminate(const int pivot_row, const int pivot_col);
-    void PrintM(const std::vector<std::vector<double>>& T) const;
 public:
-    LinearProgramming1() {};
-    LinearProgramming1(const int n) {};
+    LinearProgramming1();
+    ~LinearProgramming1();
+    LinearProgramming1(const int n);
     void AddTarget(const std::vector<double>& T);
     void AddCons(const std::vector<std::vector<double>>& A);
     LinearProgrammingAnswer& Solve();
