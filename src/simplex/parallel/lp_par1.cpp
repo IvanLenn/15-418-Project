@@ -5,22 +5,6 @@
 #include <limits>
 #include <mpi.h>
 
-LinearProgramming1::LinearProgramming1() {
-    MPI_Comm_rank(MPI_COMM_WORLD, &pid);
-    MPI_Comm_size(MPI_COMM_WORLD, &nproc);
-    NumVar = 0;
-    NumCons = 0;
-    Target = nullptr;
-    MatrixData = nullptr;
-    Matrix = nullptr;
-    TableauData = nullptr;
-    Tableau = nullptr;
-    Basic = nullptr;
-    NonBasic = nullptr;
-    buffer = nullptr;
-    Answer = new LinearProgrammingAnswer();
-}
-
 LinearProgramming1::LinearProgramming1(const int n) {
     MPI_Comm_rank(MPI_COMM_WORLD, &pid);
     MPI_Comm_size(MPI_COMM_WORLD, &nproc);
@@ -49,9 +33,6 @@ LinearProgramming1::~LinearProgramming1() {
     delete Answer;
 }
 
-/*************************
-PRECONDITION: Only pid nproc - 1 will call this function
-*************************/
 void LinearProgramming1::AddTarget(const std::vector<double>& T) {
     assert(pid == nproc - 1);
     assert(T.size() == NumVar);
@@ -66,9 +47,6 @@ void LinearProgramming1::AddTarget(const std::vector<double>& T) {
     Target[NumVar] = 0;
 }
 
-/*************************
-PRECONDITION: Only pid nproc - 1 will call this function
-*************************/
 void LinearProgramming1::AddCons(const std::vector<std::vector<double>>& A) {
     assert(pid == nproc - 1);
     for (auto &a : A) {
@@ -106,9 +84,6 @@ void LinearProgramming1::AddCons(const std::vector<std::vector<double>>& A) {
     Matrix = b;
 }
 
-/*************************
-PRECONDITION: Only calling the whole function once; Also once for Solve;
-*************************/
 void LinearProgramming1::Init() {
     // Broadcast the number of constraints
     MPI_Bcast(&NumCons, 1, MPI_INT, nproc - 1, MPI_COMM_WORLD);
@@ -301,9 +276,6 @@ bool LinearProgramming1::Feasible() {
     }
 }
 
-/*************************
-POSTCONDITION: Only Answer returned by pid nproc - 1 is valid
-*************************/
 LinearProgrammingAnswer* LinearProgramming1::Solve() {
     Init();
     if (!Feasible()) {
