@@ -4,8 +4,11 @@
 #include <fstream>
 #include <iomanip>
 #include <chrono>
+#include <math.h>
 #include "lp_seq.h"
 #include "flow_seq.h"
+
+const double epi = 1e-7;
 
 void Running(std::string test_name, std::string filename) {
 	std::ifstream fin("../tests/test_data/flow/" + filename + ".ans");
@@ -38,7 +41,7 @@ void Running(std::string test_name, std::string filename) {
 	const double init_time = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - begin).count();
 	std::cout << "Runtime (sec): " << std::fixed << std::setprecision(10) << init_time << '\n';
 	std::cout << "Max: " << answer << '\n';
-	if (abs(answer - ans) / ans < 1e-6) {
+	if ((fabs(static_cast<double>(answer) - static_cast<double>(ans)) / static_cast<double>(ans)) < epi) {
 		std::cout << "Flow easy test passed.\n";
 	} else {
 		std::cout << "Flow easy test failed.\n";
