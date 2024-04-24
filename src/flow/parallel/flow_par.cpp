@@ -59,7 +59,5 @@ FlowAnswer Flow::Solve() {
         T.AddCons(matrix);
     }
     auto ans = *T.Solve();
-    // return FlowAnswer(ans.Max, ans.Assignment);
-    auto t = std::vector<double>(1, 1);
-    return FlowAnswer(1, t);
+    return FlowAnswer(ans.Max, ans.Assignment);
 }

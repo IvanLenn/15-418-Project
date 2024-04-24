@@ -170,7 +170,6 @@ LinearProgrammingAnswer& LinearProgrammingSeq::Solve() {
             break;
         }
         Eliminate(pivot_row, pivot_col);
-        dbg();
     }
     return Answer;
 }

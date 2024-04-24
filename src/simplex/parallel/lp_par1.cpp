@@ -130,7 +130,7 @@ void LinearProgramming1::Init() {
     for (int i = 0; i < NumVar; i++) {
         NonBasic[i] = i;
     }
-    buffer = new double[std::max(NumVar + 1, NumCons)];
+    buffer = new double[std::max(NumVar + 1, task_required * nproc)];
     MPI_Scatter(MatrixData, task_required * (NumVar + 1), MPI_DOUBLE, TableauData, task_required * (NumVar + 1), MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
 }
 
