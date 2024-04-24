@@ -14,11 +14,11 @@ struct FlowAnswer {
     FlowAnswer(double Max, std::vector<double>& Assignment) : Max(Max), Assignment(Assignment) {}
 };
 
-class Flow {
+class FlowSeq {
     int n, m, s, t;
     std::vector<Edge> G;
 public:
-    Flow(int n, int s, int t, std::vector<Edge> G);
+    FlowSeq(int n, int s, int t, std::vector<Edge> G);
 
     FlowAnswer Solve();
 

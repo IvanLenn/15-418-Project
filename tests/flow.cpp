@@ -30,7 +30,7 @@ void Running(std::string test_name, std::string filename) {
 		fin >> from >> to >> cap;
 		G.push_back(Edge(from, to, cap));
 	}
-	Flow flow(n, s, t, G);
+	FlowSeq flow(n, s, t, G);
 	std::cout << "Flow " + test_name + " test: \n";
 	flow.Stats();
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();

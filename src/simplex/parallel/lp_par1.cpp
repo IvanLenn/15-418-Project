@@ -305,7 +305,6 @@ bool LinearProgramming1::Feasible() {
 POSTCONDITION: Only Answer returned by pid nproc - 1 is valid
 *************************/
 LinearProgrammingAnswer* LinearProgramming1::Solve() {
-    return Answer;
     Init();
     if (!Feasible()) {
         return Answer;

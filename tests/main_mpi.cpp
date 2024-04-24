@@ -89,13 +89,23 @@ int main(int argc, char** argv) {
                     target.push_back(tmp);
                 }
             }
-            
+            else {
+                for (int j = 0; j < numcons; j++) {
+                    for (int k = 0; k < numvar + 1; k++) {
+                        double tmp;
+                        fin >> tmp;
+                    }
+                }
+                for (int j = 0; j < numvar; j++) {
+                    double tmp;
+                    fin >> tmp;
+                }
+            }
             LinearProgramming1 lp1(numvar);
             if (pid == nproc - 1) {
                 lp1.AddTarget(target);
                 lp1.AddCons(cons);
             }
-            lp1.Print();
             LinearProgrammingAnswer Tmp = *lp1.Solve();
             // lp1.Check();
             if (pid == nproc - 1) {
