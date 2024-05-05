@@ -87,6 +87,9 @@ void LinearProgramming1::AddCons(const std::vector<std::vector<double>>& A) {
 void LinearProgramming1::Init() {
     // Broadcast the number of constraints
     MPI_Bcast(&NumCons, 1, MPI_INT, nproc - 1, MPI_COMM_WORLD);
+    if (pid != nproc - 1) {
+        Target = new double[NumVar + 1];
+    }
 
     // Allocate all required arrays across processes
     int task_required = (NumCons + nproc - 1) / nproc;
@@ -107,22 +110,19 @@ void LinearProgramming1::Init() {
     }
     buffer = new double[std::max(NumVar + 1, task_required * nproc)];
     MPI_Scatter(MatrixData, task_required * (NumVar + 1), MPI_DOUBLE, TableauData, task_required * (NumVar + 1), MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
+    MPI_Bcast(Target, NumVar + 1, MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
 }
 
 std::pair<int, int> LinearProgramming1::FindPivot() {
     int pivot_row = -1;
     int pivot_col = -1;
     double p = 0.0f;
-    if (pid == nproc - 1) {
-        for (int i = 0; i < NumVar; i++) {
-            if (Target[i] > p) {
-                pivot_col = i;
-                p = Target[i];
-            }
+    for (int i = 0; i < NumVar; i++) {
+        if (Target[i] > p) {
+            pivot_col = i;
+            p = Target[i];
         }
     }
-    MPI_Bcast(&pivot_col, 1, MPI_INT, nproc - 1, MPI_COMM_WORLD);
-    MPI_Bcast(&p, 1, MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
 
     if (p < EPI) {
         int task_required = (NumCons + nproc - 1) / nproc;
@@ -200,14 +200,12 @@ void LinearProgramming1::Eliminate(const int pivot_row, const int pivot_col) {
             Tableau[i - StartCons][pivot_col] = -Tableau[i - StartCons][pivot_col] * buffer[pivot_col];
         }
     }
-    if (pid == nproc - 1) {
-        for (int j = 0; j <= NumVar; j++) {
-            if (j != pivot_col) {
-                Target[j] -= Target[pivot_col] * buffer[j];
-            }
+    for (int j = 0; j <= NumVar; j++) {
+        if (j != pivot_col) {
+            Target[j] -= Target[pivot_col] * buffer[j];
         }
-        Target[pivot_col] = -Target[pivot_col] * buffer[pivot_col];
     }
+    Target[pivot_col] = -Target[pivot_col] * buffer[pivot_col];
 }
 
 
