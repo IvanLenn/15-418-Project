@@ -1,11 +1,11 @@
-#include "lp_par1.h"
+#include "lp_par.h"
 #include <cassert>
 #include <string>
 #include <iostream>
 #include <limits>
 #include <mpi.h>
 
-LinearProgramming1::LinearProgramming1(const int n) {
+LinearProgramming::LinearProgramming(const int n) {
     MPI_Comm_rank(MPI_COMM_WORLD, &pid);
     MPI_Comm_size(MPI_COMM_WORLD, &nproc);
     NumVar = n;
@@ -21,7 +21,7 @@ LinearProgramming1::LinearProgramming1(const int n) {
     Answer = new LinearProgrammingAnswer();
 }
 
-LinearProgramming1::~LinearProgramming1() {
+LinearProgramming::~LinearProgramming() {
     delete[] Target;
     delete[] Matrix;
     delete[] MatrixData;
@@ -33,7 +33,7 @@ LinearProgramming1::~LinearProgramming1() {
     delete Answer;
 }
 
-void LinearProgramming1::AddTarget(const std::vector<double>& T) {
+void LinearProgramming::AddTarget(const std::vector<double>& T) {
     assert(pid == nproc - 1);
     assert(T.size() == NumVar);
     InputTarget.resize(NumVar);
@@ -47,7 +47,7 @@ void LinearProgramming1::AddTarget(const std::vector<double>& T) {
     Target[NumVar] = 0;
 }
 
-void LinearProgramming1::AddCons(const std::vector<std::vector<double>>& A) {
+void LinearProgramming::AddCons(const std::vector<std::vector<double>>& A) {
     assert(pid == nproc - 1);
     for (auto &a : A) {
         assert(a.size() == NumVar + 1);
@@ -84,7 +84,7 @@ void LinearProgramming1::AddCons(const std::vector<std::vector<double>>& A) {
     Matrix = b;
 }
 
-void LinearProgramming1::Init() {
+void LinearProgramming::Init() {
     // Broadcast the number of constraints
     MPI_Bcast(&NumCons, 1, MPI_INT, nproc - 1, MPI_COMM_WORLD);
     if (pid != nproc - 1) {
@@ -113,7 +113,7 @@ void LinearProgramming1::Init() {
     MPI_Bcast(Target, NumVar + 1, MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
 }
 
-std::pair<int, int> LinearProgramming1::FindPivot() {
+std::pair<int, int> LinearProgramming::FindPivot() {
     int pivot_row = -1;
     int pivot_col = -1;
     double p = 0.0f;
@@ -171,7 +171,7 @@ std::pair<int, int> LinearProgramming1::FindPivot() {
     return std::make_pair(pivot_row, pivot_col);
 }
 
-void LinearProgramming1::Eliminate(const int pivot_row, const int pivot_col) {
+void LinearProgramming::Eliminate(const int pivot_row, const int pivot_col) {
     std::swap(Basic[pivot_row], NonBasic[pivot_col]);
     int task_required = (NumCons + nproc - 1) / nproc;
     int pid_row_local = pivot_row / task_required;
@@ -209,7 +209,7 @@ void LinearProgramming1::Eliminate(const int pivot_row, const int pivot_col) {
 }
 
 
-bool LinearProgramming1::Feasible() {
+bool LinearProgramming::Feasible() {
     int pivot_row = -1;
     int pivot_col = -1;
     while (true) {
@@ -274,7 +274,7 @@ bool LinearProgramming1::Feasible() {
     }
 }
 
-LinearProgrammingAnswer* LinearProgramming1::Solve() {
+LinearProgrammingAnswer* LinearProgramming::Solve() {
     Init();
     if (!Feasible()) {
         return Answer;
@@ -289,7 +289,7 @@ LinearProgrammingAnswer* LinearProgramming1::Solve() {
     return Answer;
 }
 
-void LinearProgramming1::Check() const {
+void LinearProgramming::Check() const {
     // Broadcast Answer
     MPI_Bcast(&Answer -> SolutionStatus, 1, MPI_INT, nproc - 1, MPI_COMM_WORLD);
     MPI_Bcast(&Answer -> Max, 1, MPI_DOUBLE, nproc - 1, MPI_COMM_WORLD);
@@ -322,7 +322,7 @@ void LinearProgramming1::Check() const {
     }
 }
 
-void LinearProgramming1::Print() const {
+void LinearProgramming::Print() const {
     if (pid != nproc - 1) return;
     auto f = [](const int i) {return "x_" + std::to_string(i);};
     std::cout << "Maximize ";
@@ -345,7 +345,7 @@ void LinearProgramming1::Print() const {
     }
 }
 
-void LinearProgramming1::dbg() const {
+void LinearProgramming::dbg() const {
     std::cout << "From pid: " << pid << " in dbg: " << StartCons << ' ' << EndCons << '\n';
     if (pid == nproc - 1) std::cout << "Tableau:\n";
     for (int i = 0; i < nproc; i++) {

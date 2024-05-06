@@ -8,7 +8,7 @@ target_link_libraries(flowseq flow_seq)
 add_executable(lppar main_mpi.cpp)
 target_include_directories(lppar PRIVATE ${MPI_CXX_INCLUDE_PATH})
 target_link_libraries(lppar ${MPI_CXX_LIBRARIES})
-target_link_libraries(lppar lp_par1)
+target_link_libraries(lppar lp_par)
 
 add_executable(flowpar flow_mpi.cpp)
 target_include_directories(flowpar PRIVATE ${MPI_CXX_INCLUDE_PATH})

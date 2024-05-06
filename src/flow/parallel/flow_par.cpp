@@ -1,6 +1,6 @@
 #include <cassert>
 #include "flow_par.h"
-#include <lp_par1.h>
+#include <lp_par.h>
 #include <mpi.h>
 
 /*************************
@@ -19,7 +19,7 @@ Flow::Flow(int n, int s, int t, std::vector<Edge> G) : n(n), s(s), t(t), G(G) {
 
 FlowAnswer Flow::Solve() {
     MPI_Bcast(&m, 1, MPI_INT, nproc - 1, MPI_COMM_WORLD);
-    LinearProgramming1 T(m);
+    LinearProgramming T(m);
 
     if (pid ==  nproc - 1) {
         std::vector<double> target(m, 0);

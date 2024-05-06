@@ -4,7 +4,7 @@
 #include <string>
 #include <fstream>
 #include <mpi.h>
-#include "lp_par1.h"
+#include "lp_par.h"
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
                     fin >> tmp;
                 }
             }
-            LinearProgramming1 lp1(numvar);
+            LinearProgramming lp1(numvar);
             if (pid == nproc - 1) {
                 lp1.AddTarget(target);
                 lp1.AddCons(cons);

@@ -48,7 +48,7 @@ struct LinearProgrammingAnswer {
     }
 };
 
-class LinearProgramming1 {
+class LinearProgramming {
 private:
     int pid, nproc;
     int StartCons, EndCons;
@@ -79,14 +79,14 @@ public:
      * Destructor for LinearProgramming1.
      * Cleans up resources used by the instance.
      */
-    ~LinearProgramming1();
+    ~LinearProgramming();
 
     /**
      * Constructor for LinearProgramming1.
      * Initializes a LinearProgramming1 instance with specified variable capacity.
      * @param n The number of variables.
      */
-    LinearProgramming1(const int n);
+    LinearProgramming(const int n);
     
     /**
      * Adds the target function coefficients to the linear program.
