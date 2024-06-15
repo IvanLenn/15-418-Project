@@ -53,3 +53,24 @@ Eliminate():
     . . . . . . . . . . . . . . . . . . . .
     . . . . . . . . . . . . . . . . . . . .
     
+
+How to run:
+In ./: 
+    mkdir build && cd build
+In build/: 
+    cmake ..
+    make
+In build/:
+    ./tests/xxx + flag
+
+Options of executable:
+./tests/lpseq -f lp_seq.in : 
+    runs lpseq on lp_seq.in
+./tests/lppar -f lp_seq.in : 
+    runs lppar on lp_seq.in
+./tests/flowseq : 
+    runs default flow test case
+./tests/flowpar : 
+    -v 1: verbose mode (0 for no output)
+    -t i: bit to encode test case (1 for easy, 2 for medium, 4 for hard; 7 for all test cases)
+    -f filename: output log
