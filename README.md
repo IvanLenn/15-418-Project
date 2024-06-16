@@ -61,5 +61,5 @@ The Simplex algorithm is a common method to solve LP. Starting with a corner of 
 
 ## POSTER
 <a class="image fit">
-<img src="https://github.com/IvanLenn/Parallel-Simplex/blob/main/doc/Poster.pdf" alt="Poster" width="500"/>
+<img src="https://github.com/IvanLenn/Parallel-Simplex/blob/main/doc/Poster.png" alt="Poster" width="500"/>
 </a>
