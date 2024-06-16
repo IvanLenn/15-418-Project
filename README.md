@@ -7,13 +7,13 @@
     <strong>Yixuan (Ivan) Zheng</strong></a>
     <br>
     <a href="doc/Proposal.pdf"><strong>Project proposal</strong></a>
+	<a href="doc/Final_report.pdf"><strong>Final report</strong></a>
   <div align="center"></div>
 </p>
 
 
 ## SUMMARY
-A parallel linear programming with modified Simplex algorithm using Message Passing Interface(MPI).
-Performance analysis are conducted on 8-core GHC machines and up to 128-core PSC machines.
+A parallel linear programming with modified Simplex algorithm using Message Passing Interface(MPI). Performance analysis are conducted on 8-core GHC machines and up to 128-core PSC machines. On general problems with 300 vertices and 6000 constraints achieve over 70x speedup on 128 cores with column-wise data partitioning optimization. 
 
 
 ## BACKGROUND: 
