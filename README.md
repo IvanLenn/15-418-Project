@@ -60,4 +60,4 @@ The Simplex algorithm is a common method to solve LP. Starting with a corner of 
 - We'll C++ for this task, which is also appropriate since C++ has excellent support for MPI interface for parallel programming with MPI.
 
 ## POSTER
-<img src="doc/poster.png" alt="poster" width="1000">
+<img src="doc/Poster.png" alt="Poster" width="1000">
