@@ -11,7 +11,7 @@
 </p>
 
 ## SUMMARY
-We are going to implement a parallel version of a parallel linear programming solver with MPI. We will parallelize Simplex algorithm in order to speed up the computation of linear programming solver. We plan to experiment on the GHC Clusters and PSC machines and perform analysis on the results. We'll probably study the parallelization of other LP algorithms such as interior point algorithms and Seidal's algorithm.
+A parallel version of a parallel linear programming solver with MPI. We will parallelize Simplex algorithm in order to speed up the computation of linear programming solver. We plan to experiment on the GHC Clusters and PSC machines and perform analysis on the results. We'll probably study the parallelization of other LP algorithms such as interior point algorithms and Seidal's algorithm.
 
 ## BACKGROUND: 
 Linear programming(LP) is a technique for the optimization of a linear objective function. The development of better and faster LP algorithms is an interesting ongoing area of research. 
@@ -59,14 +59,5 @@ The Simplex algorithm is a common method to solve LP. Starting with a corner of 
 - We’ll also use PSC machines for experiments with multi-nodes.
 - We'll C++ for this task, which is also appropriate since C++ has excellent support for MPI interface for parallel programming with MPI.
 
-## SCHEDULE: 
-| Week | Plan | Status | Comment | 
-|------|------|--------|---------|
-| March 25 | Finalize the project topic: implementing a parallel linear programming solver using MPI on private address space | :white_check_mark: | **Project Proposal Due: Wednesday, March 27th, 11:59pm** |
-| April 1 | Literature review of shared memory space parallel LP algorithm; <br>Discuss what ideas in paper can transfer to MPI; <br>Further brainstorm more MPI parallel approaches among steps of simplex algorithm; <br>Build basic test cases and development structure of our project; <br>Implement baseline serial LP program using simplex algorithm | :white_check_mark: |         |
-| April 8| Implement basic parallel simplex algorithm (each process store a portion of constraints); <br>Try different approaches including multiple path searching and those mentioned in the paper; <br>Perform numerical analysis on some basic LP problems across different problem size and thread counts on different approaches; <br>Complete test and build features for more efficient scalability analysis later |        |         |
-| April 15 | Try more approaches and optimization technique (including how to divide data; how to compress information...); <br>Start scalability, cache, workload balance, and sync and communication analysis of basic algorithm; <br>Further optimization based on previous analysis aiming for about 20x speedup on 100 cores; <br>Start applying LP onto different problems and test its speedup under different problem settings |        | **Milestone Report Due: Tuesday, April 16th, 11:59pm** |
-| April 22 | Same as previous week |        |         |
-| April 29 | Finish testing and derive a final parallel scheme; <br>Finish final report and prepare for presentation |        |         |
-| May 6 |      |        | **Poster Session: Monday, May 6th, 1:00-4:00pm <br> Final Report Due: Sunday, May 5th, 11:59pm** |
-
+## POSTER
+<img src="https://github.com/IvanLenn/Parallel-Simplex/blob/main/doc/Poster.pdf" alt="Poster" width="500"/>
